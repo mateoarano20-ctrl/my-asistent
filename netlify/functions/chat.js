@@ -1,8 +1,7 @@
-// Proxy seguro: tu API key vive en Netlify (variable ANTHROPIC_API_KEY), nunca en el navegador.
-exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Método no permitido" };
+module.exports = async (req, res) => {
+  if (req.method !== "POST") return res.status(405).json({ reply: "Método no permitido" });
   try {
-    const { messages } = JSON.parse(event.body || "{}");
+    const { messages } = req.body || {};
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -20,8 +19,8 @@ exports.handler = async (event) => {
     });
     const data = await r.json();
     const reply = data.content?.map((b) => b.text || "").join("") || data.error?.message || "No pude responder.";
-    return { statusCode: 200, headers: { "content-type": "application/json" }, body: JSON.stringify({ reply }) };
+    return res.status(200).json({ reply });
   } catch (e) {
-    return { statusCode: 500, body: JSON.stringify({ reply: "Error en el servidor: " + e.message }) };
+    return res.status(500).json({ reply: "Error en el servidor: " + e.message });
   }
 };
